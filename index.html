@@ -144,7 +144,7 @@
   .buff-gold{background:rgba(255,213,74,.14);color:var(--gold);border:1px solid var(--gold);box-shadow:0 0 16px rgba(255,213,74,.25)}
   .buff-harvest{background:rgba(255,56,96,.12);color:var(--red);border:1px solid var(--red)}
 
-  .stage{display:flex;justify-content:center}
+  .stage{display:flex;justify-content:center;flex-direction:column;align-items:center;gap:14px}
   .canvas-wrap{
     position:relative;width:440px;max-width:100%;aspect-ratio:1;
     border-radius:18px;overflow:hidden;
@@ -152,6 +152,31 @@
     box-shadow:0 0 0 1px rgba(255,255,255,.03),0 24px 70px rgba(0,0,0,.6),0 0 60px rgba(0,245,255,.08);
   }
   canvas{display:block;width:100%;height:100%;touch-action:none}
+
+  .dpad{
+    display:none;
+    grid-template-columns:64px 64px 64px;
+    grid-template-rows:64px 64px 64px;
+    gap:6px;
+    touch-action:none;
+    user-select:none;
+  }
+  .dpad-btn{
+    border:1px solid var(--border);border-radius:14px;
+    background:rgba(14,14,34,.7);color:var(--cyan);
+    font-size:22px;font-weight:700;
+    display:grid;place-items:center;
+    touch-action:manipulation;
+    transition:background .1s, transform .05s;
+    backdrop-filter:blur(8px);
+  }
+  .dpad-btn:active{background:rgba(0,245,255,.25);transform:scale(.94)}
+  .dpad-btn[disabled]{border-color:transparent;background:transparent}
+  .dpad-up{grid-column:2;grid-row:1}
+  .dpad-left{grid-column:1;grid-row:2}
+  .dpad-center{grid-column:2;grid-row:2}
+  .dpad-right{grid-column:3;grid-row:2}
+  .dpad-down{grid-column:2;grid-row:3}
 
   .overlay{
     position:absolute;inset:0;display:grid;place-items:center;
@@ -201,10 +226,59 @@
     border-top:1px solid var(--border);padding-top:12px}
 
   @media (max-width:980px){
-    .app{grid-template-columns:1fr;gap:14px}
-    .panel{order:2}
+    .app{grid-template-columns:1fr;gap:12px}
+    body{padding:10px;align-items:flex-start}
     .stage{order:1}
-    .canvas-wrap{width:min(440px,92vw)}
+    .panel{order:2;padding:14px}
+    /* 左面板：横向紧凑状态条 */
+    .app > .panel:first-of-type .brand{display:none}
+    .app > .panel:first-of-type{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;
+    }
+    .app > .panel:first-of-type .stat-card,
+    .app > .panel:first-of-type .combo-card{margin-bottom:0}
+    .app > .panel:first-of-type .shield-indicator,
+    .app > .panel:first-of-type .buff-badge{grid-column:1/-1;margin-bottom:0}
+    .app > .panel:first-of-type .recent-card{grid-column:1/-1;margin-bottom:0}
+    .app > .panel:first-of-type .section-title,
+    .app > .panel:first-of-type .ranking{display:none}
+    .stat-value{font-size:32px}
+    .combo-value{font-size:22px}
+    .recent-slot{width:24px;height:24px}
+    .recent-slot.filled .pip{width:13px;height:13px}
+    /* 画布尺寸适配竖屏高度 */
+    .canvas-wrap{width:min(94vw,56vh)}
+    /* 虚拟方向键显示 */
+    .dpad{display:grid}
+    /* 右面板：精简 */
+    .app > .panel:last-of-type .keys{display:none}
+    .app > .panel:last-of-type .tip{font-size:11px}
+    .legend{gap:6px;font-size:12px}
+  }
+
+  @media (max-width:480px){
+    body{padding:8px}
+    .app{gap:10px}
+    .panel{padding:12px;border-radius:14px}
+    .canvas-wrap{width:min(94vw,52vh);border-radius:14px}
+    .stat-value{font-size:28px}
+    .stat-label,.combo-label,.section-title{font-size:10px;letter-spacing:2px}
+    .combo-value{font-size:20px}
+    .dialog{padding:22px 18px}
+    .dialog h1{font-size:26px;letter-spacing:3px}
+    .dpad{grid-template-columns:58px 58px 58px;grid-template-rows:58px 58px 58px;gap:5px}
+    .dpad-btn{font-size:20px;border-radius:12px}
+    .toast{font-size:17px;padding:11px 20px;letter-spacing:2px}
+    .recent-slot{width:22px;height:22px}
+    .recent-row{gap:5px}
+  }
+
+  @media (max-height:640px) and (orientation:landscape){
+    .app{grid-template-columns:240px auto 220px;gap:12px}
+    .stage{order:0}
+    .canvas-wrap{width:min(60vh,420px)}
+    .dpad{display:none}
+    body{padding:8px;align-items:center}
   }
 </style>
 </head>
@@ -246,6 +320,13 @@
         <div class="flash-layer" id="flashLayer"></div>
         <div class="toast" id="toast"></div>
         <div class="overlay" id="overlay"></div>
+      </div>
+      <div class="dpad" id="dpad" aria-label="方向控制">
+        <button class="dpad-btn dpad-up" data-dir="up" type="button">▲</button>
+        <button class="dpad-btn dpad-left" data-dir="left" type="button">◀</button>
+        <button class="dpad-btn dpad-center" type="button" disabled></button>
+        <button class="dpad-btn dpad-right" data-dir="right" type="button">▶</button>
+        <button class="dpad-btn dpad-down" data-dir="down" type="button">▼</button>
       </div>
     </main>
 
@@ -965,6 +1046,19 @@
     else enqueueDir(0, dy>0?1:-1);
     touchStart = {x:t.clientX,y:t.clientY};
   }, {passive:true});
+
+  // 虚拟方向键
+  const dpadDirs = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
+  document.querySelectorAll('.dpad-btn[data-dir]').forEach(btn => {
+    const handler = e => {
+      e.preventDefault();
+      const d = btn.dataset.dir;
+      const m = dpadDirs[d];
+      if(m && state==='playing') enqueueDir(m[0], m[1]);
+    };
+    btn.addEventListener('touchstart', handler, {passive:false});
+    btn.addEventListener('mousedown', handler);
+  });
 
   // 点击画布开始/暂停（菜单态）
   $overlay.addEventListener('click', e => {
