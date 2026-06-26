@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>NEON SNAKE · 霓虹贪吃蛇</title>
+<title>GREEDY SNAKE · 贪吃蛇 by 大海</title>
 <style>
   :root{
     --bg:#05050f;
@@ -54,6 +54,7 @@
     line-height:1;
   }
   .brand-sub{font-size:13px;letter-spacing:10px;color:var(--muted);margin-top:4px}
+  .brand-author{font-size:11px;color:var(--cyan);margin-top:8px;letter-spacing:2px;opacity:.7}
 
   .stat-card,.combo-card{
     border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px;
@@ -75,12 +76,13 @@
   .combo-bar-fill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--magenta));transition:width .1s linear}
 
   .shield-indicator{
-    display:none;align-items:center;gap:8px;
-    border:1px solid var(--green);border-radius:10px;padding:9px 12px;margin-bottom:12px;
-    color:var(--green);font-size:13px;font-weight:700;letter-spacing:1px;
-    background:rgba(0,255,157,.08);box-shadow:0 0 18px rgba(0,255,157,.2);
+    display:none;
+    border:1px solid var(--green);border-radius:8px;padding:5px 10px;
+    color:var(--green);font-size:12px;font-weight:700;letter-spacing:1px;
+    background:rgba(0,255,157,.12);box-shadow:0 0 12px rgba(0,255,157,.2);
+    pointer-events:none;white-space:nowrap;
   }
-  .shield-indicator.show{display:flex;animation:pulse 1.4s ease-in-out infinite}
+  .shield-indicator.show{display:block;animation:pulse 1.4s ease-in-out infinite}
   @keyframes pulse{50%{opacity:.55}}
 
   .section-title{margin:18px 0 10px}
@@ -157,14 +159,20 @@
     transition:opacity .08s;
   }
   .buff-badge{
-    display:none;font-size:12px;font-weight:700;letter-spacing:1px;
-    padding:7px 11px;border-radius:9px;margin-bottom:10px;text-align:center;
+    display:none;font-size:11px;font-weight:700;letter-spacing:1px;
+    position:absolute;top:8px;right:8px;z-index:4;
+    padding:4px 8px;border-radius:8px;text-align:center;
+    pointer-events:none;
   }
   .buff-badge.show{display:block;animation:pulse 1.2s infinite}
   .buff-gold{background:rgba(255,213,74,.14);color:var(--gold);border:1px solid var(--gold);box-shadow:0 0 16px rgba(255,213,74,.25)}
   .buff-harvest{background:rgba(255,56,96,.12);color:var(--red);border:1px solid var(--red)}
 
-  .stage{display:flex;justify-content:center;flex-direction:column;align-items:center;gap:14px}
+  .stage{display:flex;justify-content:center;flex-direction:column;align-items:center;gap:6px}
+  .stage-bottom{
+    display:none;width:440px;max-width:100%;
+    align-items:center;justify-content:space-between;gap:8px;
+  }
   .canvas-wrap{
     position:relative;width:440px;max-width:100%;aspect-ratio:1;
     border-radius:18px;overflow:hidden;
@@ -181,6 +189,17 @@
     touch-action:none;
     user-select:none;
   }
+  .dpad-row{
+    display:none;align-items:center;gap:10px;
+  }
+  .dpad-side-btn{
+    display:none;
+    min-width:48px;height:40px;padding:0 12px;border-radius:12px;flex:none;
+    border:1px solid var(--border);background:rgba(14,14,34,.7);
+    color:var(--cyan);font-size:13px;font-weight:700;
+    touch-action:manipulation;backdrop-filter:blur(8px);
+  }
+  .dpad-side-btn:active{background:rgba(0,245,255,.25);transform:scale(.94)}
   .dpad-btn{
     border:1px solid var(--border);border-radius:14px;
     background:rgba(14,14,34,.7);color:var(--cyan);
@@ -204,13 +223,36 @@
     padding:24px;text-align:center;transition:opacity .25s;
   }
   .overlay.hide{display:none}
+  .info-overlay{
+    position:fixed;inset:0;z-index:100;display:none;
+    place-items:center;padding:16px;text-align:center;
+    background:rgba(3,3,12,.85);backdrop-filter:blur(8px);
+  }
+  .info-overlay.show{display:grid}
   .dialog{
     width:min(320px,90%);border:1px solid var(--border);border-radius:16px;
     padding:26px 24px;background:rgba(10,10,30,.9);
   }
+  .dialog-info{
+    width:min(360px,94%);padding:18px 20px;
+  }
+  .dialog-info .dialog-info-title{
+    font-size:20px;margin:0 0 10px;letter-spacing:2px;
+    background:linear-gradient(90deg,var(--cyan),var(--magenta));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
   .dialog h1{margin:0 0 6px;font-size:30px;letter-spacing:4px;
     background:linear-gradient(90deg,var(--cyan),var(--magenta));
     -webkit-background-clip:text;background-clip:text;color:transparent}
+  .dialog-logo{
+    font-size:16px;font-weight:900;letter-spacing:5px;margin-bottom:10px;opacity:.6;
+    background:linear-gradient(90deg,var(--cyan),var(--magenta));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .dialog-contact{
+    margin-top:14px;padding-top:12px;font-size:12px;color:var(--muted);
+    border-top:1px solid var(--border);letter-spacing:1px;
+  }
   .dialog .sub{color:var(--muted);font-size:13px;margin-bottom:16px;letter-spacing:1px}
   .dialog .row{display:flex;justify-content:space-between;margin:8px 0;font-size:15px}
   .dialog .row b{color:var(--cyan)}
@@ -246,66 +288,67 @@
     border-top:1px solid var(--border);padding-top:12px}
 
   @media (max-width:980px){
-    .app{grid-template-columns:1fr;gap:8px}
-    body{padding:8px;align-items:flex-start}
-    /* 左面板排到画布前面 */
-    .app > .panel:first-of-type{order:0;padding:10px 12px}
+    html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+    body{padding:6px;align-items:flex-start}
+    .app{grid-template-columns:1fr;gap:6px;height:100%;overflow:hidden}
+    /* 左面板排到画布前面，固定紧凑 */
+    .app > .panel:first-of-type{order:0;padding:6px 10px}
     .stage{order:1}
-    .app > .panel:last-of-type{order:2}
+    /* 右面板移动端隐藏 */
+    .app > .panel:last-of-type{display:none}
     .panel{padding:14px}
-    /* 左面板：横向紧凑状态条 */
     .app > .panel:first-of-type .brand{display:none}
     .app > .panel:first-of-type{
-      display:grid;grid-template-columns:1fr 1fr;gap:8px;
+      display:grid;grid-template-columns:1fr 1fr;gap:6px;
     }
     .app > .panel:first-of-type .stat-card,
-    .app > .panel:first-of-type .combo-card{margin-bottom:0;padding:8px 10px}
-    .app > .panel:first-of-type .shield-indicator,
-    .app > .panel:first-of-type .buff-badge{grid-column:1/-1;margin-bottom:0;padding:6px 10px}
+    .app > .panel:first-of-type .combo-card{margin-bottom:0;padding:6px 10px}
     .app > .panel:first-of-type .section-title,
     .app > .panel:first-of-type .ranking{display:none}
-    .stat-value{font-size:26px}
+    .stat-value{font-size:24px}
     .stat-label,.combo-label{font-size:10px;letter-spacing:2px}
-    .combo-value{font-size:20px}
-    .recent-slot{width:22px;height:22px}
-    .recent-slot.filled .pip{width:12px;height:12px}
-    .recent-top{width:min(94vw,52vh);padding:8px 12px}
-    /* 画布尺寸适配竖屏高度 */
-    .canvas-wrap{width:min(94vw,52vh)}
-    /* 虚拟方向键显示 */
+    .combo-value{font-size:18px}
+    .recent-slot{width:20px;height:20px}
+    .recent-slot.filled .pip{width:11px;height:11px}
+    .recent-top{width:min(94vw,44vh);padding:6px 10px;margin-bottom:4px}
+    .canvas-wrap{width:min(94vw,44vh)}
+    /* 画布下方：榜单/护盾/说明 一行 */
+    .stage-bottom{display:flex;width:min(94vw,44vh)}
+    /* 方向键显示 */
     .dpad{display:grid}
-    /* 右面板：精简 */
-    .app > .panel:last-of-type .keys{display:none}
-    .app > .panel:last-of-type .tip{font-size:11px}
-    .legend{gap:6px;font-size:12px}
+    .dpad-row{display:flex}
+    .dpad-side-btn{display:grid;place-items:center}
   }
 
   @media (max-width:480px){
     body{padding:6px}
-    .app{gap:8px}
-    .panel{padding:10px;border-radius:14px}
-    .canvas-wrap{width:min(94vw,46vh);border-radius:14px}
-    .recent-top{width:min(94vw,46vh);padding:7px 10px}
-    .stat-value{font-size:24px}
+    .app{gap:6px}
+    .canvas-wrap{width:min(94vw,40vh);border-radius:14px}
+    .recent-top{width:min(94vw,40vh);padding:5px 8px}
+    .stage-bottom{width:min(94vw,40vh)}
+    .stat-value{font-size:22px}
     .stat-label,.combo-label,.section-title{font-size:9px;letter-spacing:2px}
-    .combo-value{font-size:18px}
+    .combo-value{font-size:16px}
     .dialog{padding:22px 18px}
     .dialog h1{font-size:26px;letter-spacing:3px}
-    .dpad{grid-template-columns:52px 52px 52px;grid-template-rows:52px 52px 52px;gap:4px}
+    .dpad{grid-template-columns:50px 50px 50px;grid-template-rows:50px 50px 50px;gap:4px}
     .dpad-btn{font-size:18px;border-radius:11px}
+    .dpad-side-btn{width:40px;height:40px;font-size:12px}
     .toast{font-size:16px;padding:10px 18px;letter-spacing:2px}
-    .recent-slot{width:20px;height:20px}
+    .recent-slot{width:18px;height:18px}
     .recent-row{gap:4px}
   }
 
   /* 矮竖屏：进一步压缩保证全部可见 */
   @media (max-width:480px) and (max-height:720px){
-    .canvas-wrap{width:min(94vw,40vh)}
-    .recent-top{width:min(94vw,40vh)}
-    .dpad{grid-template-columns:46px 46px 46px;grid-template-rows:46px 46px 46px;gap:3px}
+    .canvas-wrap{width:min(94vw,36vh)}
+    .recent-top{width:min(94vw,36vh)}
+    .stage-bottom{width:min(94vw,36vh)}
+    .dpad{grid-template-columns:44px 44px 44px;grid-template-rows:44px 44px 44px;gap:3px}
     .dpad-btn{font-size:16px;border-radius:10px}
-    .stat-value{font-size:22px}
-    .combo-value{font-size:16px}
+    .dpad-side-btn{width:36px;height:36px;font-size:11px}
+    .stat-value{font-size:20px}
+    .combo-value{font-size:15px}
   }
 
   @media (max-height:640px) and (orientation:landscape){
@@ -321,8 +364,9 @@
   <div class="app">
     <aside class="panel">
       <div class="brand">
-        <div class="brand-title">NEON</div>
+        <div class="brand-title">GREEDY</div>
         <div class="brand-sub">SNAKE</div>
+        <div class="brand-author">by 大海</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">SCORE</div>
@@ -334,9 +378,6 @@
         <div class="combo-value"><span id="comboNum">0</span><small>×</small><span id="comboMult">1.0</span></div>
         <div class="combo-bar"><div class="combo-bar-fill" id="comboBar"></div></div>
       </div>
-      <div class="shield-indicator" id="shieldIndicator">◆ 护盾已激活</div>
-      <div class="buff-badge buff-gold" id="buffGold">★ 黄金狂热 · 得分 ×2</div>
-      <div class="buff-badge buff-harvest" id="buffHarvest">▼ 丰收 · 5秒不加速</div>
       <div class="section-title">排行榜</div>
       <ol class="ranking" id="ranking"></ol>
     </aside>
@@ -354,16 +395,25 @@
       </div>
       <div class="canvas-wrap">
         <canvas id="game"></canvas>
+        <div class="buff-badge buff-gold" id="buffGold">★ ×2</div>
+        <div class="buff-badge buff-harvest" id="buffHarvest">▼ 丰收</div>
         <div class="flash-layer" id="flashLayer"></div>
         <div class="toast" id="toast"></div>
         <div class="overlay" id="overlay"></div>
       </div>
-      <div class="dpad" id="dpad" aria-label="方向控制">
-        <button class="dpad-btn dpad-up" data-dir="up" type="button">▲</button>
-        <button class="dpad-btn dpad-left" data-dir="left" type="button">◀</button>
-        <button class="dpad-btn dpad-center" type="button" disabled></button>
-        <button class="dpad-btn dpad-right" data-dir="right" type="button">▶</button>
-        <button class="dpad-btn dpad-down" data-dir="down" type="button">▼</button>
+      <div class="stage-bottom">
+        <button class="dpad-side-btn" id="btnRank" type="button">榜单</button>
+        <div class="shield-indicator" id="shieldIndicator">◆ 护盾</div>
+        <button class="dpad-side-btn" id="btnHelp" type="button">说明</button>
+      </div>
+      <div class="dpad-row">
+        <div class="dpad" id="dpad" aria-label="方向控制">
+          <button class="dpad-btn dpad-up" data-dir="up" type="button">▲</button>
+          <button class="dpad-btn dpad-left" data-dir="left" type="button">◀</button>
+          <button class="dpad-btn dpad-center" type="button" disabled></button>
+          <button class="dpad-btn dpad-right" data-dir="right" type="button">▶</button>
+          <button class="dpad-btn dpad-down" data-dir="down" type="button">▼</button>
+        </div>
       </div>
     </main>
 
@@ -384,6 +434,8 @@
       <div class="tip">3 秒内连吃触发<b style="color:var(--magenta)">连击</b>最高 3×。<b style="color:var(--cyan)">连续 5 个同果实</b>触发大招：丰收 / 黄金狂热 / 钻石风暴 / 不朽。随分数增长会出现障碍墙，小心走位！</div>
     </aside>
   </div>
+
+  <div class="info-overlay" id="infoOverlay"></div>
 
 <script>
 (() => {
@@ -424,6 +476,7 @@
   const $flash = document.getElementById('flashLayer');
   const $ranking = document.getElementById('ranking');
   const $overlay = document.getElementById('overlay');
+  const $infoOverlay = document.getElementById('infoOverlay');
 
   // ---------- 高清画布 ----------
   const dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
@@ -447,6 +500,8 @@
   let goldFever = 0;             // 黄金狂热剩余时间(ms)
   let slowFreeze = 0;            // 丰收：不加速剩余时间(ms)
   let flash = 0;                 // 屏幕闪光剩余时间(ms)
+  let dying = false;             // 死亡动画进行中
+  let dyingTimer = 0;            // 死亡动画计时
   best = +(localStorage.getItem(BEST_KEY) || 0);
   let ranking = loadRanking();
 
@@ -725,9 +780,15 @@
     sfx('crash');
     shake(10, 360);
     burst(snake[0].x, snake[0].y, '#ff3860', 30, 5);
+    // 死亡动画：逐节爆裂
+    dying = true; dyingTimer = 0;
     const isRecord = score > best;
     if(isRecord){ best = score; localStorage.setItem(BEST_KEY, best); }
-    showOverOverlay(isRecord);
+    // 延迟弹窗
+    setTimeout(()=>{
+      dying = false;
+      showOverOverlay(isRecord);
+    }, 1800);
     updateUI();
   }
 
@@ -843,6 +904,20 @@
       if(slowFreeze > 0){ slowFreeze -= dt; if(slowFreeze<=0) slowFreeze=0; }
       if(flash > 0){ flash -= dt; if(flash<=0) flash=0; }
       updateBuffUI();
+    }
+
+    // 死亡动画：蛇身逐节爆裂
+    if(dying){
+      dyingTimer += dt;
+      const stepMs = 120;
+      const idx = Math.floor(dyingTimer / stepMs);
+      if(idx < snake.length){
+        const seg = snake[snake.length - 1 - idx];
+        if(seg){
+          burst(seg.x, seg.y, '#ff3860', 12, 3);
+          if(idx % 2 === 0) beep(200 - idx*10, 0.06, 'sawtooth', 0.06);
+        }
+      }
     }
 
     // 粒子始终更新
@@ -1095,8 +1170,8 @@
   function showMenuOverlay(){
     showOverlay(`
       <div class="dialog">
-        <h1>NEON SNAKE</h1>
-        <div class="sub">霓虹贪吃蛇 · 连击得高分</div>
+        <h1>GREEDY SNAKE</h1>
+        <div class="sub">by 大海</div>
         <div class="row"><span>最高分</span><b>${best}</b></div>
         <button class="btn" id="btnStart">开始游戏</button>
       </div>`);
@@ -1111,25 +1186,54 @@
       </div>`);
     document.getElementById('btnResume').onclick = resume;
   }
+  const RANDOM_NAMES = ['霓虹猎手','赛博游侠','像素勇士','数据流侠','量子蛇王','光速玩家','虚空行者','银河之蛇'];
+  function randomName(){
+    return RANDOM_NAMES[Math.floor(Math.random()*RANDOM_NAMES.length)] + Math.floor(Math.random()*90+10);
+  }
   function showOverOverlay(isRecord){
-    showOverlay(`
+    const defaultName = randomName();
+    $infoOverlay.innerHTML = `
       <div class="dialog">
         <h1>GAME OVER</h1>
         ${isRecord?'<div class="new-record">★ 新纪录 ★</div>':'<div class="sub">再接再厉</div>'}
         <div class="row"><span>本局得分</span><b>${score}</b></div>
         <div class="row"><span>最高分</span><b>${best}</b></div>
-        <input id="nameInput" type="text" maxlength="12" placeholder="输入名字记入排行榜" value="">
+        <input id="nameInput" type="text" maxlength="12" placeholder="输入名字" value="${defaultName}">
         <button class="btn" id="btnRestart">保存并再来</button>
+        <button class="btn ghost" id="btnViewRank">查看排行榜</button>
         <button class="btn ghost" id="btnSkip">直接重开</button>
-      </div>`);
-    const input = document.getElementById('nameInput');
-    setTimeout(()=>input.focus(), 50);
-    document.getElementById('btnRestart').onclick = () => {
-      const name = (input.value||'').trim() || '玩家';
+        <div class="dialog-contact">联系作者微信：bloodjohnny</div>
+      </div>`;
+    $infoOverlay.classList.add('show');
+    const input = $infoOverlay.querySelector('#nameInput');
+    setTimeout(()=>{ input.focus(); input.select(); }, 50);
+    $infoOverlay.querySelector('#btnRestart').onclick = () => {
+      const name = (input.value||'').trim() || defaultName;
       submitScore(name);
+      $infoOverlay.classList.remove('show');
+      $infoOverlay.innerHTML = '';
       startBGM(); startGame();
     };
-    document.getElementById('btnSkip').onclick = () => { startBGM(); startGame(); };
+    $infoOverlay.querySelector('#btnViewRank').onclick = () => {
+      let list = '';
+      for(let i=0;i<10;i++){
+        const it = ranking[i];
+        if(it) list += `<div class="row"><span>${i+1}. ${it.name}</span><b>${it.score}</b></div>`;
+        else list += `<div class="row"><span style="color:var(--muted)">${i+1}. 虚位以待</span><b>—</b></div>`;
+      }
+      $infoOverlay.innerHTML = `
+        <div class="dialog dialog-info">
+          <h1 class="dialog-info-title">排行榜</h1>
+          ${list}
+          <button class="btn" id="btnBackOver">返回</button>
+        </div>`;
+      $infoOverlay.querySelector('#btnBackOver').onclick = () => showOverOverlay(isRecord);
+    };
+    $infoOverlay.querySelector('#btnSkip').onclick = () => {
+      $infoOverlay.classList.remove('show');
+      $infoOverlay.innerHTML = '';
+      startBGM(); startGame();
+    };
   }
   function submitScore(name){
     const rec = { name, score, date: Date.now() };
@@ -1187,6 +1291,49 @@
     };
     btn.addEventListener('touchstart', handler, {passive:false});
     btn.addEventListener('mousedown', handler);
+  });
+
+  // 排行榜/说明按钮（移动端）
+  function showInfoOverlay(title, htmlBody){
+    pause();
+    $infoOverlay.innerHTML = `
+      <div class="dialog dialog-info">
+        <h1 class="dialog-info-title">${title}</h1>
+        ${htmlBody}
+        <button class="btn" id="btnCloseInfo">关闭并继续</button>
+      </div>`;
+    $infoOverlay.classList.add('show');
+    document.getElementById('btnCloseInfo').onclick = () => {
+      $infoOverlay.classList.remove('show');
+      $infoOverlay.innerHTML = '';
+      resume();
+    };
+  }
+  document.getElementById('btnRank').addEventListener('click', () => {
+    let list = '';
+    for(let i=0;i<10;i++){
+      const it = ranking[i];
+      if(it) list += `<div class="row"><span>${i+1}. ${it.name}</span><b>${it.score}</b></div>`;
+      else list += `<div class="row"><span style="color:var(--muted)">${i+1}. 虚位以待</span><b>—</b></div>`;
+    }
+    showInfoOverlay('排行榜', list);
+  });
+  document.getElementById('btnHelp').addEventListener('click', () => {
+    const body = `
+      <div style="text-align:left;font-size:13px;line-height:1.8;color:var(--text)">
+        <div style="color:var(--cyan);font-weight:700;margin-bottom:6px">食物</div>
+        <div>🍎 苹果 +1 &nbsp; 🌟 金苹果 +3</div>
+        <div>💎 钻石 +5 &nbsp; 🛡 护盾 免死1次</div>
+        <div style="color:var(--magenta);font-weight:700;margin:10px 0 6px">连击</div>
+        <div>3秒内连吃，倍率最高 3×</div>
+        <div style="color:var(--gold);font-weight:700;margin:10px 0 6px">连续同果大招</div>
+        <div>🍎 丰收：多刷苹果+不加速</div>
+        <div>🌟 黄金狂热：8秒得分×2</div>
+        <div>💎 钻石风暴：清除障碍</div>
+        <div>🛡 不朽：免死护盾</div>
+        <div style="color:var(--muted);margin-top:10px">方向键/WASD移动，空格暂停</div>
+      </div>`;
+    showInfoOverlay('游戏说明', body);
   });
 
   // 点击画布开始/暂停（菜单态）

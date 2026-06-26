@@ -1,8 +1,10 @@
-127.0.0.1 - - [26/Jun/2026 21:39:02] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [26/Jun/2026 21:39:09] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [26/Jun/2026 21:39:09] code 404, message File not found
-127.0.0.1 - - [26/Jun/2026 21:39:09] "GET /favicon.ico HTTP/1.1" 404 -
-127.0.0.1 - - [26/Jun/2026 21:39:24] "GET /_float_test.html HTTP/1.1" 200 -
-127.0.0.1 - - [26/Jun/2026 21:39:24] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [26/Jun/2026 21:39:24] code 404, message File not found
-127.0.0.1 - - [26/Jun/2026 21:39:24] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jun/2026 22:26:41] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jun/2026 22:26:41] code 404, message File not found
+127.0.0.1 - - [26/Jun/2026 22:26:41] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jun/2026 22:27:00] "GET /_gotest.html HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jun/2026 22:27:00] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jun/2026 22:27:00] code 404, message File not found
+127.0.0.1 - - [26/Jun/2026 22:27:00] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [26/Jun/2026 22:28:33] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [26/Jun/2026 22:28:44] code 404, message File not found
+127.0.0.1 - - [26/Jun/2026 22:28:44] "GET /favicon.ico HTTP/1.1" 404 -
