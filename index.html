@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>NEON SNAKE · 霓虹贪吃蛇</title>
+<style>
+  :root{
+    --bg:#05050f;
+    --bg2:#0a0a22;
+    --panel:rgba(14,14,34,.72);
+    --border:rgba(0,245,255,.18);
+    --text:#e9e9ff;
+    --muted:#8080a8;
+    --cyan:#00f5ff;
+    --magenta:#ff2bd6;
+    --gold:#ffd54a;
+    --green:#00ff9d;
+    --red:#ff3860;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:
+      radial-gradient(1200px 700px at 70% -10%, rgba(255,43,214,.12), transparent 60%),
+      radial-gradient(1000px 600px at 10% 110%, rgba(0,245,255,.12), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI',system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    min-height:100%;padding:18px;overflow:auto;
+  }
+  .app{
+    display:grid;
+    grid-template-columns:260px auto 240px;
+    gap:20px;align-items:start;
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:18px;
+    backdrop-filter:blur(10px);
+    box-shadow:0 0 0 1px rgba(255,255,255,.02), 0 18px 50px rgba(0,0,0,.5);
+  }
+  .brand{margin-bottom:18px}
+  .brand-title{
+    font-size:30px;font-weight:900;letter-spacing:6px;
+    background:linear-gradient(90deg,var(--cyan),var(--magenta));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    line-height:1;
+  }
+  .brand-sub{font-size:13px;letter-spacing:10px;color:var(--muted);margin-top:4px}
+
+  .stat-card,.combo-card{
+    border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px;
+    background:rgba(0,0,0,.25);
+  }
+  .stat-label,.combo-label,.section-title{
+    font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;
+  }
+  .stat-value{font-size:42px;font-weight:800;line-height:1;color:var(--cyan);
+    text-shadow:0 0 18px rgba(0,245,255,.55)}
+  .stat-sub{margin-top:6px;font-size:12px;color:var(--muted)}
+  .stat-sub span{color:var(--gold)}
+
+  .combo-card{transition:border-color .2s}
+  .combo-card.active{border-color:var(--magenta);box-shadow:0 0 22px rgba(255,43,214,.25) inset}
+  .combo-value{font-size:26px;font-weight:800;margin-top:4px;color:var(--magenta)}
+  .combo-value small{font-size:14px;color:var(--muted);margin:0 4px}
+  .combo-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:8px;overflow:hidden}
+  .combo-bar-fill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--magenta));transition:width .1s linear}
+
+  .shield-indicator{
+    display:none;align-items:center;gap:8px;
+    border:1px solid var(--green);border-radius:10px;padding:9px 12px;margin-bottom:12px;
+    color:var(--green);font-size:13px;font-weight:700;letter-spacing:1px;
+    background:rgba(0,255,157,.08);box-shadow:0 0 18px rgba(0,255,157,.2);
+  }
+  .shield-indicator.show{display:flex;animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.55}}
+
+  .section-title{margin:18px 0 10px}
+  .ranking{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:13px}
+  .ranking li{
+    display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;
+    padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.03);
+  }
+  .ranking li:nth-child(1){background:rgba(255,213,74,.12);color:var(--gold)}
+  .ranking li:nth-child(2){background:rgba(200,200,220,.08)}
+  .ranking li:nth-child(3){background:rgba(205,127,50,.1)}
+  .ranking li .rk-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ranking li .rk-score{font-weight:700}
+
+  .recent-card{
+    border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px;
+    background:rgba(0,0,0,.25);
+  }
+  .recent-row{display:flex;gap:7px;margin-top:9px;justify-content:center}
+  .recent-slot{
+    width:30px;height:30px;border-radius:9px;flex:none;
+    display:grid;place-items:center;
+    background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.1);
+    transition:transform .15s, box-shadow .2s;
+  }
+  .recent-slot.filled{border-style:solid;border-color:transparent}
+  .recent-slot.filled .pip{width:16px;height:16px;border-radius:50%}
+  .recent-slot.filled.normal{box-shadow:0 0 10px rgba(255,56,96,.5)}
+  .recent-slot.filled.normal .pip{background:#ff3860}
+  .recent-slot.filled.golden{box-shadow:0 0 10px rgba(255,213,74,.55)}
+  .recent-slot.filled.golden .pip{background:#ffd54a}
+  .recent-slot.filled.diamond .pip{background:#00d4ff;transform:rotate(45deg);border-radius:3px}
+  .recent-slot.filled.diamond{box-shadow:0 0 10px rgba(0,212,255,.55)}
+  .recent-slot.filled.shield .pip{background:#00ff9d}
+  .recent-slot.filled.shield{box-shadow:0 0 10px rgba(0,255,157,.5)}
+  .recent-slot.pulse{animation:pipPulse .5s ease}
+  @keyframes pipPulse{0%{transform:scale(.4)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+  .streak-prog{height:4px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:9px;overflow:hidden}
+  .streak-prog-fill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--magenta));transition:width .25s}
+  .recent-streak-label{font-size:11px;color:var(--muted);margin-top:6px;text-align:center;letter-spacing:1px;min-height:14px}
+  .recent-streak-label b{color:var(--magenta)}
+
+  .toast{
+    position:absolute;top:18%;left:50%;transform:translate(-50%,-50%) scale(.8);
+    padding:14px 26px;border-radius:14px;font-size:20px;font-weight:900;letter-spacing:3px;
+    background:rgba(10,10,30,.85);border:1px solid var(--border);backdrop-filter:blur(8px);
+    opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:5;white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .toast .toast-icon{margin-right:8px}
+
+  .flash-layer{
+    position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:3;
+    transition:opacity .08s;
+  }
+  .buff-badge{
+    display:none;font-size:12px;font-weight:700;letter-spacing:1px;
+    padding:7px 11px;border-radius:9px;margin-bottom:10px;text-align:center;
+  }
+  .buff-badge.show{display:block;animation:pulse 1.2s infinite}
+  .buff-gold{background:rgba(255,213,74,.14);color:var(--gold);border:1px solid var(--gold);box-shadow:0 0 16px rgba(255,213,74,.25)}
+  .buff-harvest{background:rgba(255,56,96,.12);color:var(--red);border:1px solid var(--red)}
+
+  .stage{display:flex;justify-content:center}
+  .canvas-wrap{
+    position:relative;width:440px;max-width:100%;aspect-ratio:1;
+    border-radius:18px;overflow:hidden;
+    border:1px solid var(--border);
+    box-shadow:0 0 0 1px rgba(255,255,255,.03),0 24px 70px rgba(0,0,0,.6),0 0 60px rgba(0,245,255,.08);
+  }
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+
+  .overlay{
+    position:absolute;inset:0;display:grid;place-items:center;
+    background:rgba(3,3,12,.78);backdrop-filter:blur(6px);
+    padding:24px;text-align:center;transition:opacity .25s;
+  }
+  .overlay.hide{display:none}
+  .dialog{
+    width:min(320px,90%);border:1px solid var(--border);border-radius:16px;
+    padding:26px 24px;background:rgba(10,10,30,.9);
+  }
+  .dialog h1{margin:0 0 6px;font-size:30px;letter-spacing:4px;
+    background:linear-gradient(90deg,var(--cyan),var(--magenta));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .dialog .sub{color:var(--muted);font-size:13px;margin-bottom:16px;letter-spacing:1px}
+  .dialog .row{display:flex;justify-content:space-between;margin:8px 0;font-size:15px}
+  .dialog .row b{color:var(--cyan)}
+  .new-record{color:var(--gold);font-weight:800;letter-spacing:2px;margin:6px 0 14px;
+    text-shadow:0 0 14px rgba(255,213,74,.6);animation:pulse 1s infinite}
+  .dialog input{
+    width:100%;padding:11px 12px;margin:8px 0 14px;border-radius:10px;
+    border:1px solid var(--border);background:rgba(0,0,0,.4);color:var(--text);
+    font-size:15px;outline:none}
+  .dialog input:focus{border-color:var(--cyan)}
+  .btn{
+    width:100%;padding:13px;border:0;border-radius:11px;cursor:pointer;
+    font-size:15px;font-weight:800;letter-spacing:3px;
+    background:linear-gradient(90deg,var(--cyan),var(--magenta));color:#05050f;
+    transition:transform .12s, box-shadow .2s}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(0,245,255,.25)}
+  .btn:active{transform:translateY(0)}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text);margin-top:10px}
+
+  .legend,.keys{list-style:none;margin:0;padding:0;display:grid;gap:9px;font-size:13px;color:var(--muted)}
+  .legend li,.keys li{display:flex;align-items:center;gap:9px}
+  .legend em{margin-left:auto;font-style:normal;color:var(--text);font-weight:700}
+  .dot{width:14px;height:14px;border-radius:50%;flex:none}
+  .dot-normal{background:var(--red);box-shadow:0 0 10px var(--red)}
+  .dot-golden{background:var(--gold);box-shadow:0 0 10px var(--gold)}
+  .dot-diamond{background:#00d4ff;box-shadow:0 0 10px #00d4ff;transform:rotate(45deg);border-radius:3px}
+  .dot-shield{background:var(--green);box-shadow:0 0 10px var(--green)}
+  kbd{
+    display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;
+    border:1px solid var(--border);border-radius:6px;background:rgba(255,255,255,.04);
+    color:var(--text);font-size:12px;font-family:inherit}
+  .tip{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.6;
+    border-top:1px solid var(--border);padding-top:12px}
+
+  @media (max-width:980px){
+    .app{grid-template-columns:1fr;gap:14px}
+    .panel{order:2}
+    .stage{order:1}
+    .canvas-wrap{width:min(440px,92vw)}
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel">
+      <div class="brand">
+        <div class="brand-title">NEON</div>
+        <div class="brand-sub">SNAKE</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">SCORE</div>
+        <div class="stat-value" id="score">0</div>
+        <div class="stat-sub">最高 <span id="best">0</span></div>
+      </div>
+      <div class="combo-card" id="comboCard">
+        <div class="combo-label">COMBO</div>
+        <div class="combo-value"><span id="comboNum">0</span><small>×</small><span id="comboMult">1.0</span></div>
+        <div class="combo-bar"><div class="combo-bar-fill" id="comboBar"></div></div>
+      </div>
+      <div class="shield-indicator" id="shieldIndicator">◆ 护盾已激活</div>
+      <div class="buff-badge buff-gold" id="buffGold">★ 黄金狂热 · 得分 ×2</div>
+      <div class="buff-badge buff-harvest" id="buffHarvest">▼ 丰收 · 5秒不加速</div>
+      <div class="recent-card">
+        <div class="combo-label">最近 5 个果实</div>
+        <div class="recent-row" id="recentRow">
+          <span class="recent-slot"></span><span class="recent-slot"></span><span class="recent-slot"></span><span class="recent-slot"></span><span class="recent-slot"></span>
+        </div>
+        <div class="streak-prog"><div class="streak-prog-fill" id="streakProg"></div></div>
+        <div class="recent-streak-label" id="streakLabel"></div>
+      </div>
+      <div class="section-title">排行榜</div>
+      <ol class="ranking" id="ranking"></ol>
+    </aside>
+
+    <main class="stage">
+      <div class="canvas-wrap">
+        <canvas id="game"></canvas>
+        <div class="flash-layer" id="flashLayer"></div>
+        <div class="toast" id="toast"></div>
+        <div class="overlay" id="overlay"></div>
+      </div>
+    </main>
+
+    <aside class="panel">
+      <div class="section-title">食物图鉴</div>
+      <ul class="legend">
+        <li><span class="dot dot-normal"></span>苹果 <em>+1</em></li>
+        <li><span class="dot dot-golden"></span>金苹果 <em>+3</em></li>
+        <li><span class="dot dot-diamond"></span>钻石 <em>+5</em></li>
+        <li><span class="dot dot-shield"></span>护盾 <em>免死</em></li>
+      </ul>
+      <div class="section-title">操作</div>
+      <ul class="keys">
+        <li><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 移动</li>
+        <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动</li>
+        <li><kbd>Space</kbd> 暂停 / 继续</li>
+      </ul>
+      <div class="tip">3 秒内连吃触发<b style="color:var(--magenta)">连击</b>最高 3×。<b style="color:var(--cyan)">连续 5 个同果实</b>触发大招：丰收 / 黄金狂热 / 钻石风暴 / 不朽。随分数增长会出现障碍墙，小心走位！</div>
+    </aside>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+  // ---------- 配置 ----------
+  const CFG = {
+    cell: 16, grid: 25,
+    initialInterval: 150, minInterval: 65,
+    comboWindow: 3000,
+    obstacleEvery: 25, maxObstacles: 18,
+    specialMax: 2, specialSpawnInterval: 2600,
+  };
+  const SIZE = CFG.cell * CFG.grid;
+
+  const FOOD = {
+    normal:  { score:1, color:'#ff3860', glow:'#ff3860', weight:100, life:Infinity, label:'苹果' },
+    golden:  { score:3, color:'#ffd54a', glow:'#ffaa00', weight:0,   life:8000,      label:'金苹果' },
+    diamond: { score:5, color:'#00d4ff', glow:'#00d4ff', weight:0,   life:6500,      label:'钻石' },
+    shield:  { score:0, color:'#00ff9d', glow:'#00ff9d', weight:0,   life:10000,     label:'护盾' },
+  };
+
+  // ---------- DOM ----------
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const $score = document.getElementById('score');
+  const $best = document.getElementById('best');
+  const $comboNum = document.getElementById('comboNum');
+  const $comboMult = document.getElementById('comboMult');
+  const $comboBar = document.getElementById('comboBar');
+  const $comboCard = document.getElementById('comboCard');
+  const $shield = document.getElementById('shieldIndicator');
+  const $buffGold = document.getElementById('buffGold');
+  const $buffHarvest = document.getElementById('buffHarvest');
+  const $recentRow = document.getElementById('recentRow');
+  const $streakProg = document.getElementById('streakProg');
+  const $streakLabel = document.getElementById('streakLabel');
+  const $toast = document.getElementById('toast');
+  const $flash = document.getElementById('flashLayer');
+  const $ranking = document.getElementById('ranking');
+  const $overlay = document.getElementById('overlay');
+
+  // ---------- 高清画布 ----------
+  const dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
+  canvas.width = SIZE * dpr; canvas.height = SIZE * dpr;
+
+  // ---------- 状态 ----------
+  const RANK_KEY = 'neon-snake-ranking';
+  const BEST_KEY = 'neon-snake-best';
+  let state = 'menu'; // menu | playing | paused | over
+  let snake = [], dir = {x:1,y:0}, dirQueue = [];
+  let foods = [], obstacles = [], particles = [];
+  let score = 0, best = 0, combo = 0, comboTimer = 0, shieldCount = 0, invuln = 0;
+  let moveTimer = 0, moveInterval = CFG.initialInterval, lastTime = 0;
+  let specialSpawnTimer = 0;
+  let shakeT = 0, shakeMag = 0;
+  let now = 0;
+  // 连续同果 & 最近果实
+  let recentFoods = [];          // 最近吃的果实类型（最多5个）
+  let streakType = null;         // 当前连续类型
+  let streakCount = 0;           // 当前连续计数
+  let goldFever = 0;             // 黄金狂热剩余时间(ms)
+  let slowFreeze = 0;            // 丰收：不加速剩余时间(ms)
+  let flash = 0;                 // 屏幕闪光剩余时间(ms)
+  best = +(localStorage.getItem(BEST_KEY) || 0);
+  let ranking = loadRanking();
+
+  // ---------- 音频 ----------
+  let actx = null;
+  function initAudio(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
+  function beep(freq, dur, type='sine', vol=0.08){
+    if(!actx) return;
+    const t = actx.currentTime;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t + dur);
+  }
+  function sfx(kind){
+    if(!actx) return;
+    if(kind==='eat') beep(520 + combo*18, 0.09, 'square', 0.07);
+    else if(kind==='gold'){ beep(660,0.07,'square',0.08); setTimeout(()=>beep(880,0.09,'square',0.08),60); }
+    else if(kind==='diamond'){ beep(880,0.06,'triangle',0.09); setTimeout(()=>beep(1320,0.12,'triangle',0.08),50); }
+    else if(kind==='shield') beep(300,0.18,'sawtooth',0.07);
+    else if(kind==='crash'){ beep(220,0.18,'sawtooth',0.12); setTimeout(()=>beep(120,0.3,'sawtooth',0.12),120); }
+    else if(kind==='block') beep(180,0.08,'square',0.1);
+    else if(kind==='streak'){ // 大招触发：上行琶音
+      [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.12,'triangle',0.09), i*70));
+    }
+    else if(kind==='harvest') beep(440,0.15,'sine',0.08);
+  }
+
+  // ---------- 工具 ----------
+  function loadRanking(){ try{ const r = JSON.parse(localStorage.getItem(RANK_KEY)); return Array.isArray(r)?r.slice(0,10):[]; }catch(e){ return []; } }
+  function saveRanking(){ localStorage.setItem(RANK_KEY, JSON.stringify(ranking)); }
+  function key(x,y){ return x+','+y; }
+  function rand(n){ return Math.floor(Math.random()*n); }
+  function occupiedSet(){
+    const s = new Set();
+    snake.forEach(p=>s.add(key(p.x,p.y)));
+    obstacles.forEach(p=>s.add(key(p.x,p.y)));
+    foods.forEach(f=>s.add(key(f.x,f.y)));
+    return s;
+  }
+  function freeCell(){
+    const occ = occupiedSet();
+    const free = [];
+    for(let y=0;y<CFG.grid;y++) for(let x=0;x<CFG.grid;x++){ if(!occ.has(key(x,y))) free.push({x,y}); }
+    return free.length ? free[rand(free.length)] : null;
+  }
+
+  // ---------- 食物 ----------
+  function spawnFood(type){
+    const c = freeCell(); if(!c) return;
+    foods.push({ x:c.x, y:c.y, type, born:now });
+  }
+  function ensureNormal(){
+    if(!foods.some(f=>f.type==='normal')) spawnFood('normal');
+  }
+  function trySpawnSpecial(){
+    const specialCount = foods.filter(f=>f.type!=='normal').length;
+    if(specialCount >= CFG.specialMax) return;
+    const r = Math.random();
+    let type;
+    if(r < 0.5) type = 'golden';
+    else if(r < 0.8) type = 'diamond';
+    else type = 'shield';
+    spawnFood(type);
+  }
+  function expireFoods(){
+    foods = foods.filter(f => (now - f.born) < FOOD[f.type].life);
+  }
+
+  // ---------- 障碍 ----------
+  function maybeAddObstacle(){
+    const target = Math.min(CFG.maxObstacles, Math.floor(score / CFG.obstacleEvery));
+    while(obstacles.length < target){
+      const c = freeCell(); if(!c) break;
+      // 避开蛇头前方区域，保证公平
+      if(Math.abs(c.x - snake[0].x) < 3 && Math.abs(c.y - snake[0].y) < 3) { continue; }
+      obstacles.push(c);
+    }
+  }
+
+  // ---------- 粒子 / 震动 ----------
+  function burst(x,y,color,count=14,power=3){
+    for(let i=0;i<count;i++){
+      const a = Math.random()*Math.PI*2;
+      const sp = (0.5 + Math.random())*power;
+      particles.push({
+        x: x*CFG.cell + CFG.cell/2,
+        y: y*CFG.cell + CFG.cell/2,
+        vx: Math.cos(a)*sp, vy: Math.sin(a)*sp,
+        life: 1, decay: 0.02 + Math.random()*0.02,
+        size: 2 + Math.random()*2.5, color
+      });
+    }
+  }
+  function shake(mag, time){ shakeMag = Math.max(shakeMag, mag); shakeT = Math.max(shakeT, time); }
+
+  // ---------- 连击 ----------
+  function comboMult(){ return Math.min(3, 1 + Math.floor(combo/3)*0.5); }
+  function bumpCombo(){
+    combo += 1; comboTimer = CFG.comboWindow;
+    $comboCard.classList.toggle('active', combo>=3);
+  }
+  function resetCombo(){
+    combo = 0; comboTimer = 0;
+    $comboCard.classList.remove('active');
+  }
+
+  // ---------- 连续同果 ----------
+  const STREAK_NEED = 5;
+  const STREAK_EFFECT = {
+    normal:  { name:'丰收',     icon:'🍎', desc:'多刷3苹果 + 5秒不加速' },
+    golden:  { name:'黄金狂热', icon:'★', desc:'8秒得分 ×2' },
+    diamond: { name:'钻石风暴', icon:'◆', desc:'清除全部障碍' },
+    shield:  { name:'不朽',     icon:'◉', desc:'获得双护盾' },
+  };
+  function recordFood(type){
+    recentFoods.push(type);
+    if(recentFoods.length > 5) recentFoods.shift();
+    if(streakType === type){ streakCount += 1; }
+    else { streakType = type; streakCount = 1; }
+    renderRecent(true);
+    if(streakCount >= STREAK_NEED){
+      triggerStreak(type);
+      streakCount = 0; streakType = null;
+      renderRecent(false);
+    }
+  }
+  function triggerStreak(type){
+    const eff = STREAK_EFFECT[type];
+    sfx('streak');
+    shake(8, 320);
+    showToast(eff.icon + ' ' + eff.name);
+    const h = snake[0];
+    burst(h.x, h.y, FOOD[type].color, 36, 5.5);
+    if(type === 'normal'){
+      // 丰收：多刷3个苹果 + 5秒不加速
+      for(let i=0;i<3;i++) spawnFood('normal');
+      slowFreeze = 5000;
+      sfx('harvest');
+    } else if(type === 'golden'){
+      // 黄金狂热：8秒得分×2
+      goldFever = 8000;
+    } else if(type === 'diamond'){
+      // 钻石风暴：清除障碍 + 闪光
+      flash = 420;
+      obstacles.forEach(o=>burst(o.x,o.y,'#00d4ff',12,3));
+      obstacles = [];
+    } else if(type === 'shield'){
+      // 不朽：双护盾
+      shieldCount = 2;
+    }
+    updateUI();
+  }
+  function showToast(text){
+    $toast.textContent = text;
+    $toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=> $toast.classList.remove('show'), 1500);
+  }
+
+  // ---------- 游戏流程 ----------
+  function startGame(){
+    snake = [{x:12,y:12},{x:11,y:12},{x:10,y:12}];
+    dir = {x:1,y:0}; dirQueue = [];
+    foods = []; obstacles = []; particles = [];
+    score = 0; combo = 0; comboTimer = 0; shieldCount = 0; invuln = 0;
+    moveInterval = CFG.initialInterval; moveTimer = 0;
+    specialSpawnTimer = 0;
+    recentFoods = []; streakType = null; streakCount = 0;
+    goldFever = 0; slowFreeze = 0; flash = 0;
+    resetCombo();
+    ensureNormal();
+    state = 'playing';
+    hideOverlay();
+    renderRecent(false);
+    lastTime = performance.now();
+    updateUI();
+  }
+
+  function finishGame(){
+    state = 'over';
+    sfx('crash');
+    shake(10, 360);
+    burst(snake[0].x, snake[0].y, '#ff3860', 30, 5);
+    const isRecord = score > best;
+    if(isRecord){ best = score; localStorage.setItem(BEST_KEY, best); }
+    showOverOverlay(isRecord);
+    updateUI();
+  }
+
+  function enqueueDir(nx,ny){
+    const last = dirQueue.length ? dirQueue[dirQueue.length-1] : dir;
+    if(last.x + nx === 0 && last.y + ny === 0) return; // 反向忽略
+    if(last.x === nx && last.y === ny) return;
+    if(dirQueue.length < 2) dirQueue.push({x:nx,y:ny});
+  }
+
+  function step(){
+    if(dirQueue.length){ const nd = dirQueue.shift(); dir = nd; }
+    const head = snake[0];
+    const nx = (head.x + dir.x + CFG.grid) % CFG.grid;
+    const ny = (head.y + dir.y + CFG.grid) % CFG.grid;
+
+    const eatIdx = foods.findIndex(f=>f.x===nx && f.y===ny);
+    const willGrow = eatIdx >= 0;
+    const body = willGrow ? snake : snake.slice(0,-1);
+    const hitSelf = body.some(p=>p.x===nx && p.y===ny);
+    const hitObs = obstacles.some(o=>o.x===nx && o.y===ny);
+
+    if(hitSelf || hitObs){
+      if(shieldCount > 0){
+        shieldCount -= 1; invuln = 600;
+        sfx('block');
+        shake(6,200);
+        burst(nx,ny,'#00ff9d',18,3);
+        if(hitObs){ obstacles = obstacles.filter(o=>!(o.x===nx&&o.y===ny)); }
+        updateUI();
+        // 穿过：正常推进
+      } else {
+        // 把头移到撞点用于死亡动画
+        snake.unshift({x:nx,y:ny}); if(!willGrow) snake.pop();
+        finishGame();
+        return;
+      }
+    }
+
+    snake.unshift({x:nx,y:ny});
+    if(eatIdx >= 0){
+      const f = foods[eatIdx]; foods.splice(eatIdx,1);
+      const def = FOOD[f.type];
+      const goldMult = goldFever > 0 ? 2 : 1;
+      if(f.type==='normal'){
+        bumpCombo();
+        const gain = Math.round(def.score * comboMult()) * goldMult;
+        score += gain;
+        if(slowFreeze <= 0) moveInterval = Math.max(CFG.minInterval, moveInterval * 0.97);
+        sfx('eat');
+        burst(f.x,f.y,def.color,14,3);
+      } else if(f.type==='golden'){
+        bumpCombo();
+        const gain = Math.round(def.score * comboMult()) * goldMult;
+        score += gain;
+        if(slowFreeze <= 0) moveInterval = Math.max(CFG.minInterval, moveInterval * 0.975);
+        sfx('gold');
+        burst(f.x,f.y,def.color,22,4);
+        shake(4,160);
+      } else if(f.type==='diamond'){
+        bumpCombo();
+        const gain = Math.round(def.score * comboMult()) * goldMult;
+        score += gain;
+        sfx('diamond');
+        burst(f.x,f.y,def.color,28,4.5);
+        shake(5,200);
+      } else if(f.type==='shield'){
+        shieldCount = Math.min(2, shieldCount + 1); invuln = 500;
+        sfx('shield');
+        burst(f.x,f.y,def.color,20,3.5);
+      }
+      recordFood(f.type);
+      ensureNormal();
+      maybeAddObstacle();
+    } else {
+      snake.pop();
+    }
+    updateUI();
+  }
+
+  // ---------- 主循环 ----------
+  function loop(t){
+    now = t;
+    const dt = Math.min(50, t - lastTime);
+    lastTime = t;
+
+    if(state === 'playing'){
+      moveTimer += dt;
+      while(moveTimer >= moveInterval){
+        moveTimer -= moveInterval;
+        step();
+        if(state !== 'playing') break;
+      }
+      // 连击计时
+      if(comboTimer > 0){
+        comboTimer -= dt;
+        if(comboTimer <= 0) resetCombo();
+      }
+      // 特殊食物刷新
+      specialSpawnTimer += dt;
+      if(specialSpawnTimer >= CFG.specialSpawnInterval){
+        specialSpawnTimer = 0;
+        trySpawnSpecial();
+      }
+      expireFoods();
+      if(invuln > 0) invuln -= dt;
+      // buff 计时
+      if(goldFever > 0){ goldFever -= dt; if(goldFever<=0) goldFever=0; }
+      if(slowFreeze > 0){ slowFreeze -= dt; if(slowFreeze<=0) slowFreeze=0; }
+      if(flash > 0){ flash -= dt; if(flash<=0) flash=0; }
+      updateBuffUI();
+    }
+
+    // 粒子始终更新
+    for(const p of particles){
+      p.x += p.vx; p.y += p.vy; p.vx *= 0.94; p.vy *= 0.94;
+      p.life -= p.decay;
+    }
+    particles = particles.filter(p=>p.life>0);
+
+    if(shakeT > 0){ shakeT -= dt; if(shakeT<=0) shakeMag = 0; }
+
+    render(t);
+    updateComboUI();
+    $flash.style.opacity = flash > 0 ? Math.min(0.7, flash/300) : 0;
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- 渲染 ----------
+  function render(t){
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,SIZE,SIZE);
+
+    // 震动
+    if(shakeMag > 0 && shakeT > 0){
+      const m = shakeMag * (shakeT/360);
+      ctx.translate((Math.random()-0.5)*m, (Math.random()-0.5)*m);
+    }
+
+    drawBg(t);
+    drawObstacles();
+    drawFoods(t);
+    drawSnake(t);
+    drawParticles();
+  }
+
+  function drawBg(t){
+    // 渐变底
+    const g = ctx.createLinearGradient(0,0,SIZE,SIZE);
+    g.addColorStop(0,'#070718'); g.addColorStop(1,'#0c0c24');
+    ctx.fillStyle = g; ctx.fillRect(0,0,SIZE,SIZE);
+
+    // 网格
+    ctx.strokeStyle = 'rgba(0,245,255,0.05)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for(let i=0;i<=CFG.grid;i++){
+      const p = i*CFG.cell + 0.5;
+      ctx.moveTo(p,0); ctx.lineTo(p,SIZE);
+      ctx.moveTo(0,p); ctx.lineTo(SIZE,p);
+    }
+    ctx.stroke();
+
+    // 呼吸边光
+    const pulse = 0.5 + 0.5*Math.sin(t/700);
+    ctx.strokeStyle = `rgba(0,245,255,${0.12 + pulse*0.08})`;
+    ctx.lineWidth = 2; ctx.strokeRect(1,1,SIZE-2,SIZE-2);
+  }
+
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  function drawObstacles(){
+    for(const o of obstacles){
+      const x = o.x*CFG.cell, y = o.y*CFG.cell;
+      ctx.fillStyle = 'rgba(120,120,160,0.25)';
+      roundRect(x+2,y+2,CFG.cell-4,CFG.cell-4,3); ctx.fill();
+      ctx.strokeStyle = 'rgba(180,180,230,0.5)'; ctx.lineWidth = 1.2; ctx.stroke();
+    }
+  }
+
+  function drawFoods(t){
+    for(const f of foods){
+      const def = FOOD[f.type];
+      const cx = f.x*CFG.cell + CFG.cell/2;
+      const cy = f.y*CFG.cell + CFG.cell/2;
+      const pulse = 0.5 + 0.5*Math.sin(t/200 + f.x + f.y);
+      const r = CFG.cell*0.34 + pulse*1.6;
+
+      // 即将消失闪烁
+      const age = t - f.born;
+      const lifeLeft = def.life - age;
+      let alpha = 1;
+      if(def.life !== Infinity && lifeLeft < 2000){
+        alpha = 0.4 + 0.6*Math.abs(Math.sin(t/90));
+      }
+      ctx.globalAlpha = alpha;
+
+      ctx.shadowColor = def.glow; ctx.shadowBlur = 16;
+      ctx.fillStyle = def.color;
+
+      if(f.type==='diamond'){
+        ctx.save(); ctx.translate(cx,cy); ctx.rotate(t/500);
+        ctx.beginPath();
+        for(let i=0;i<4;i++){
+          const a = i*Math.PI/2;
+          ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+        }
+        ctx.closePath(); ctx.fill(); ctx.restore();
+      } else if(f.type==='shield'){
+        ctx.save(); ctx.translate(cx,cy);
+        ctx.beginPath();
+        ctx.moveTo(0,-r);
+        ctx.quadraticCurveTo(r,-r*0.3, r*0.7, r);
+        ctx.quadraticCurveTo(0, r*0.5, -r*0.7, r);
+        ctx.quadraticCurveTo(-r,-r*0.3, 0,-r);
+        ctx.fill(); ctx.restore();
+      } else {
+        ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      // 高光
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath(); ctx.arc(cx-r*0.3, cy-r*0.3, r*0.25, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawSnake(t){
+    const len = snake.length;
+    for(let i=len-1;i>=0;i--){
+      const p = snake[i];
+      const x = p.x*CFG.cell, y = p.y*CFG.cell;
+      const ratio = len>1 ? i/(len-1) : 0;
+      const hue = 185 + ratio*135;        // 青 -> 品红
+      const light = 62 - ratio*12;
+      const col = `hsl(${hue},100%,${light}%)`;
+
+      // 护盾光环
+      if(shieldCount > 0 && i===0){
+        ctx.shadowColor = '#00ff9d'; ctx.shadowBlur = 18;
+        ctx.fillStyle = shieldCount >= 2 ? 'rgba(0,255,157,0.28)' : 'rgba(0,255,157,0.15)';
+        roundRect(x-2,y-2,CFG.cell+4,CFG.cell+4,6); ctx.fill();
+        if(shieldCount >= 2){ // 双护盾外圈
+          ctx.strokeStyle = 'rgba(0,255,157,0.6)'; ctx.lineWidth = 1.5;
+          roundRect(x-4,y-4,CFG.cell+8,CFG.cell+8,7); ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+      }
+      // 无敌闪烁
+      if(invuln>0 && Math.floor(t/80)%2===0 && i===0){
+        ctx.globalAlpha = 0.5;
+      }
+
+      ctx.shadowColor = i===0 ? '#00f5ff' : col;
+      ctx.shadowBlur = i===0 ? 18 : 10;
+      ctx.fillStyle = col;
+      roundRect(x+1.5, y+1.5, CFG.cell-3, CFG.cell-3, 5);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+
+      // 蛇头眼睛
+      if(i===0){
+        const cx = x+CFG.cell/2, cy = y+CFG.cell/2;
+        const ex = dir.x, ey = dir.y;
+        const off = 3.2, eo = 3;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(cx + ex*off - ey*eo, cy + ey*off - ex*eo, 2.4, 0, Math.PI*2);
+        ctx.arc(cx + ex*off + ey*eo, cy + ey*off + ex*eo, 2.4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#05050f';
+        ctx.beginPath();
+        ctx.arc(cx + ex*(off+1) - ey*eo, cy + ey*(off+1) - ex*eo, 1.2, 0, Math.PI*2);
+        ctx.arc(cx + ex*(off+1) + ey*eo, cy + ey*(off+1) + ex*eo, 1.2, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawParticles(){
+    for(const p of particles){
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2); ctx.fill();
+    }
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+  }
+
+  // ---------- UI ----------
+  function updateUI(){
+    $score.textContent = score;
+    $best.textContent = best;
+    if(shieldCount >= 1){
+      $shield.classList.add('show');
+      $shield.textContent = shieldCount >= 2 ? '◆◆ 双护盾已激活' : '◆ 护盾已激活';
+    } else {
+      $shield.classList.remove('show');
+    }
+  }
+  function updateBuffUI(){
+    $buffGold.classList.toggle('show', goldFever > 0);
+    $buffHarvest.classList.toggle('show', slowFreeze > 0);
+  }
+  function renderRecent(animate){
+    const slots = $recentRow.children;
+    for(let i=0;i<5;i++){
+      const slot = slots[i];
+      const type = recentFoods[i];
+      slot.className = 'recent-slot';
+      slot.innerHTML = '';
+      if(type){
+        slot.classList.add('filled', type);
+        const pip = document.createElement('span');
+        pip.className = 'pip';
+        slot.appendChild(pip);
+      }
+      if(animate && i === recentFoods.length-1){
+        slot.classList.add('pulse');
+      }
+    }
+    // 连续进度条与标签
+    const pct = streakCount>0 ? (streakCount/STREAK_NEED)*100 : 0;
+    $streakProg.style.width = pct + '%';
+    if(streakCount >= 2){
+      $streakLabel.innerHTML = `连续 <b>${streakCount}</b> 个 ${STREAK_EFFECT[streakType].icon}${STREAK_EFFECT[streakType].name}（${STREAK_NEED-streakCount} 个触发）`;
+    } else if(streakCount === 1){
+      $streakLabel.innerHTML = `开始连吃 <b>${STREAK_EFFECT[streakType].icon}${STREAK_EFFECT[streakType].name}</b>`;
+    } else {
+      $streakLabel.textContent = '';
+    }
+  }
+  function updateComboUI(){
+    $comboNum.textContent = combo;
+    $comboMult.textContent = comboMult().toFixed(1);
+    const pct = comboTimer>0 ? (comboTimer/CFG.comboWindow)*100 : 0;
+    $comboBar.style.width = pct + '%';
+  }
+  function renderRanking(){
+    $ranking.innerHTML = '';
+    for(let i=0;i<10;i++){
+      const it = ranking[i];
+      const li = document.createElement('li');
+      if(it){
+        li.innerHTML = `<span>${i+1}</span><span class="rk-name" title="${it.name}">${it.name}</span><span class="rk-score">${it.score}</span>`;
+      } else {
+        li.innerHTML = `<span>${i+1}</span><span class="rk-name" style="color:var(--muted)">虚位以待</span><span class="rk-score">—</span>`;
+      }
+      $ranking.appendChild(li);
+    }
+  }
+
+  // ---------- 覆盖层 ----------
+  function hideOverlay(){ $overlay.classList.add('hide'); $overlay.innerHTML=''; }
+  function showOverlay(html){ $overlay.innerHTML = html; $overlay.classList.remove('hide'); }
+
+  function showMenuOverlay(){
+    showOverlay(`
+      <div class="dialog">
+        <h1>NEON SNAKE</h1>
+        <div class="sub">霓虹贪吃蛇 · 连击得高分</div>
+        <div class="row"><span>最高分</span><b>${best}</b></div>
+        <button class="btn" id="btnStart">开始游戏</button>
+      </div>`);
+    document.getElementById('btnStart').onclick = () => { initAudio(); startGame(); };
+  }
+  function showPauseOverlay(){
+    showOverlay(`
+      <div class="dialog">
+        <h1>暂停</h1>
+        <div class="sub">按 Space 或点击继续</div>
+        <button class="btn" id="btnResume">继续</button>
+      </div>`);
+    document.getElementById('btnResume').onclick = resume;
+  }
+  function showOverOverlay(isRecord){
+    showOverlay(`
+      <div class="dialog">
+        <h1>GAME OVER</h1>
+        ${isRecord?'<div class="new-record">★ 新纪录 ★</div>':'<div class="sub">再接再厉</div>'}
+        <div class="row"><span>本局得分</span><b>${score}</b></div>
+        <div class="row"><span>最高分</span><b>${best}</b></div>
+        <input id="nameInput" type="text" maxlength="12" placeholder="输入名字记入排行榜" value="">
+        <button class="btn" id="btnRestart">保存并再来</button>
+        <button class="btn ghost" id="btnSkip">直接重开</button>
+      </div>`);
+    const input = document.getElementById('nameInput');
+    setTimeout(()=>input.focus(), 50);
+    document.getElementById('btnRestart').onclick = () => {
+      const name = (input.value||'').trim() || '玩家';
+      submitScore(name);
+      startGame();
+    };
+    document.getElementById('btnSkip').onclick = () => { startGame(); };
+  }
+  function submitScore(name){
+    const rec = { name, score, date: Date.now() };
+    ranking.push(rec);
+    ranking.sort((a,b)=>b.score-a.score);
+    ranking = ranking.slice(0,10);
+    saveRanking(); renderRanking();
+  }
+
+  function pause(){ if(state==='playing'){ state='paused'; showPauseOverlay(); } }
+  function resume(){ if(state==='paused'){ state='playing'; hideOverlay(); lastTime = performance.now(); } }
+
+  // ---------- 输入 ----------
+  const KEYMAP = {
+    ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0],
+    w:[0,-1], s:[0,1], a:[-1,0], d:[1,0], W:[0,-1], S:[0,1], A:[-1,0], D:[1,0],
+  };
+  window.addEventListener('keydown', e => {
+    if(e.key === ' ' || e.code === 'Space'){
+      e.preventDefault();
+      if(state==='playing') pause();
+      else if(state==='paused') resume();
+      return;
+    }
+    const m = KEYMAP[e.key];
+    if(!m) return;
+    e.preventDefault();
+    if(state==='playing') enqueueDir(m[0], m[1]);
+  }, {passive:false});
+
+  // 触屏滑动
+  let touchStart = null;
+  canvas.addEventListener('touchstart', e => {
+    if(state!=='playing') return;
+    const t = e.touches[0]; touchStart = {x:t.clientX,y:t.clientY};
+  }, {passive:true});
+  canvas.addEventListener('touchmove', e => {
+    if(!touchStart || state!=='playing') return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
+    if(Math.abs(dx) < 18 && Math.abs(dy) < 18) return;
+    if(Math.abs(dx) > Math.abs(dy)) enqueueDir(dx>0?1:-1, 0);
+    else enqueueDir(0, dy>0?1:-1);
+    touchStart = {x:t.clientX,y:t.clientY};
+  }, {passive:true});
+
+  // 点击画布开始/暂停（菜单态）
+  $overlay.addEventListener('click', e => {
+    if(e.target !== $overlay) return;
+  });
+
+  // ---------- 启动 ----------
+  renderRanking();
+  renderRecent(false);
+  updateUI();
+  updateBuffUI();
+  showMenuOverlay();
+  lastTime = performance.now();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
