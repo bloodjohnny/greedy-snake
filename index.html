@@ -181,17 +181,6 @@
   }
   canvas{display:block;width:100%;height:100%;touch-action:none}
 
-  .dpad{
-    display:none;
-    grid-template-columns:64px 64px 64px;
-    grid-template-rows:64px 64px 64px;
-    gap:6px;
-    touch-action:none;
-    user-select:none;
-  }
-  .dpad-row{
-    display:none;align-items:center;gap:10px;
-  }
   .dpad-side-btn{
     display:none;
     min-width:48px;height:40px;padding:0 12px;border-radius:12px;flex:none;
@@ -200,22 +189,6 @@
     touch-action:manipulation;backdrop-filter:blur(8px);
   }
   .dpad-side-btn:active{background:rgba(0,245,255,.25);transform:scale(.94)}
-  .dpad-btn{
-    border:1px solid var(--border);border-radius:14px;
-    background:rgba(14,14,34,.7);color:var(--cyan);
-    font-size:22px;font-weight:700;
-    display:grid;place-items:center;
-    touch-action:manipulation;
-    transition:background .1s, transform .05s;
-    backdrop-filter:blur(8px);
-  }
-  .dpad-btn:active{background:rgba(0,245,255,.25);transform:scale(.94)}
-  .dpad-btn[disabled]{border-color:transparent;background:transparent}
-  .dpad-up{grid-column:2;grid-row:1}
-  .dpad-left{grid-column:1;grid-row:2}
-  .dpad-center{grid-column:2;grid-row:2}
-  .dpad-right{grid-column:3;grid-row:2}
-  .dpad-down{grid-column:2;grid-row:3}
 
   .overlay{
     position:absolute;inset:0;display:grid;place-items:center;
@@ -314,9 +287,6 @@
     .canvas-wrap{width:min(94vw,44vh)}
     /* 画布下方：榜单/护盾/说明 一行 */
     .stage-bottom{display:flex;width:min(94vw,44vh)}
-    /* 方向键显示 */
-    .dpad{display:grid}
-    .dpad-row{display:flex}
     .dpad-side-btn{display:grid;place-items:center}
   }
 
@@ -331,8 +301,6 @@
     .combo-value{font-size:16px}
     .dialog{padding:22px 18px}
     .dialog h1{font-size:26px;letter-spacing:3px}
-    .dpad{grid-template-columns:50px 50px 50px;grid-template-rows:50px 50px 50px;gap:4px}
-    .dpad-btn{font-size:18px;border-radius:11px}
     .dpad-side-btn{width:40px;height:40px;font-size:12px}
     .toast{font-size:16px;padding:10px 18px;letter-spacing:2px}
     .recent-slot{width:18px;height:18px}
@@ -344,8 +312,6 @@
     .canvas-wrap{width:min(94vw,36vh)}
     .recent-top{width:min(94vw,36vh)}
     .stage-bottom{width:min(94vw,36vh)}
-    .dpad{grid-template-columns:44px 44px 44px;grid-template-rows:44px 44px 44px;gap:3px}
-    .dpad-btn{font-size:16px;border-radius:10px}
     .dpad-side-btn{width:36px;height:36px;font-size:11px}
     .stat-value{font-size:20px}
     .combo-value{font-size:15px}
@@ -355,7 +321,6 @@
     .app{grid-template-columns:240px auto 220px;gap:12px}
     .stage{order:0}
     .canvas-wrap{width:min(60vh,420px)}
-    .dpad{display:none}
     body{padding:8px;align-items:center}
   }
 </style>
@@ -405,15 +370,6 @@
         <button class="dpad-side-btn" id="btnRank" type="button">榜单</button>
         <div class="shield-indicator" id="shieldIndicator">◆ 护盾</div>
         <button class="dpad-side-btn" id="btnHelp" type="button">说明</button>
-      </div>
-      <div class="dpad-row">
-        <div class="dpad" id="dpad" aria-label="方向控制">
-          <button class="dpad-btn dpad-up" data-dir="up" type="button">▲</button>
-          <button class="dpad-btn dpad-left" data-dir="left" type="button">◀</button>
-          <button class="dpad-btn dpad-center" type="button" disabled></button>
-          <button class="dpad-btn dpad-right" data-dir="right" type="button">▶</button>
-          <button class="dpad-btn dpad-down" data-dir="down" type="button">▼</button>
-        </div>
       </div>
     </main>
 
@@ -1279,19 +1235,6 @@
     else enqueueDir(0, dy>0?1:-1);
     touchStart = {x:t.clientX,y:t.clientY};
   }, {passive:true});
-
-  // 虚拟方向键
-  const dpadDirs = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
-  document.querySelectorAll('.dpad-btn[data-dir]').forEach(btn => {
-    const handler = e => {
-      e.preventDefault();
-      const d = btn.dataset.dir;
-      const m = dpadDirs[d];
-      if(m && state==='playing') enqueueDir(m[0], m[1]);
-    };
-    btn.addEventListener('touchstart', handler, {passive:false});
-    btn.addEventListener('mousedown', handler);
-  });
 
   // 排行榜/说明按钮（移动端）
   function showInfoOverlay(title, htmlBody){
